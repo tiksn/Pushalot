@@ -76,6 +76,7 @@ _Chutzpah*
 ipch/
 *.aps
 *.ncb
+*.opendb
 *.opensdf
 *.sdf
 *.cachefile
@@ -155,6 +156,10 @@ publish/
 csx/
 *.build.csdef
 
+# Windows Azure Emulator
+ecf/
+rcf/
+
 # Windows Store app package directory
 AppPackages/
 
@@ -199,6 +204,9 @@ UpgradeLog*.htm
 # Microsoft Fakes
 FakesAssemblies/
 
+# GhostDoc plugin setting file
+*.GhostDoc.xml
+
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 
@@ -215,3 +223,9 @@ FakesAssemblies/
 **/*.Server/GeneratedArtifacts
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
+
+# Paket dependency manager
+.paket/paket.exe
+
+# FAKE - F# Make
+.fake/
