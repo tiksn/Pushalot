@@ -1,4 +1,12 @@
-﻿using System.Linq;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace TIKSN.Pushalot
 {
@@ -19,63 +27,61 @@ namespace TIKSN.Pushalot
 
         //private AuthorizationToken authorizationToken;
 
-        private System.Collections.Generic.HashSet<AuthorizationToken> generalSubscribers;
+        private HashSet<AuthorizationToken> generalSubscribers;
 
         public PushalotClient()
         {
-            this.generalSubscribers = new System.Collections.Generic.HashSet<AuthorizationToken>();
+			generalSubscribers = new HashSet<AuthorizationToken>();
         }
 
         public bool Subscribe(AuthorizationToken authorizationToken)
         {
-            return this.generalSubscribers.Add(authorizationToken);
+            return generalSubscribers.Add(authorizationToken);
         }
 
         public bool Unsubscribe(AuthorizationToken authorizationToken)
         {
-            return this.generalSubscribers.Remove(authorizationToken);
+            return generalSubscribers.Remove(authorizationToken);
         }
 
-        public async System.Threading.Tasks.Task SendMessage(Message message)
+        public async Task SendMessage(Message message)
         {
-            foreach (var generalSubscriber in this.generalSubscribers)
+            foreach (var generalSubscriber in generalSubscribers)
             {
                 await SendMessage(message, generalSubscriber);
             }
         }
 
-        protected static async System.Threading.Tasks.Task SendMessage(Message message, AuthorizationToken authorizationToken)
+        protected static async Task SendMessage(Message message, AuthorizationToken authorizationToken)
         {
             string jsonText = GetJsonText(message, authorizationToken);
 
-            System.Diagnostics.Debug.WriteLine("JSON: {0}", jsonText);
+            Debug.WriteLine("JSON: {0}", jsonText);
 
-            using (var client = new System.Net.Http.HttpClient())
+            using (var client = new HttpClient())
             {
-                using (var content = new System.Net.Http.StringContent(jsonText, System.Text.Encoding.UTF8, REQUEST_CONTENT_TYPE))
+                using (var content = new StringContent(jsonText, Encoding.UTF8, REQUEST_CONTENT_TYPE))
                 {
                     using (var response = await client.PostAsync(API_SEND_MESSAGE_URL, content))
                     {
-                        System.Diagnostics.Debug.WriteLine("Response Message: {0}", response.Content.ReadAsStringAsync().Result);
-
                         switch (response.StatusCode)
                         {
-                            case System.Net.HttpStatusCode.OK:
+                            case HttpStatusCode.OK:
                                 break;
-                            case System.Net.HttpStatusCode.BadRequest:
-                                throw new System.Exception("Input data validation failed. Check result information Description field for detailed information. Report about this issue by visiting https://pushalot.codeplex.com/workitem/list/basic.");
-                            case System.Net.HttpStatusCode.MethodNotAllowed:
-                                throw new System.Exception("Method POST is required. Report about this issue by visiting https://pushalot.codeplex.com/workitem/list/basic.");
-                            case System.Net.HttpStatusCode.NotAcceptable:
-                                throw new System.Exception("Message throttle limit hit. Check result information Description field for information which limit was exceeded. See limits (https://pushalot.com/api#limits) to learn more about what limits are enforced.");
-                            case System.Net.HttpStatusCode.Gone:
-                                throw new System.Exception("The AuthorizationToken is no longer valid and no more messages should be ever sent again using that token.");
-                            case System.Net.HttpStatusCode.InternalServerError:
-                                throw new System.Exception("Something is broken. Please contact Pushalot.com (https://pushalot.com/support) so we can investigate.");
-                            case System.Net.HttpStatusCode.ServiceUnavailable:
-                                throw new System.Exception("Pushalot.com servers are currently overloaded with requests. Try again later.");
+                            case HttpStatusCode.BadRequest:
+                                throw new Exception("Input data validation failed. Check result information Description field for detailed information. Report about this issue by visiting https://pushalot.codeplex.com/workitem/list/basic.");
+                            case HttpStatusCode.MethodNotAllowed:
+                                throw new Exception("Method POST is required. Report about this issue by visiting https://pushalot.codeplex.com/workitem/list/basic.");
+                            case HttpStatusCode.NotAcceptable:
+                                throw new Exception("Message throttle limit hit. Check result information Description field for information which limit was exceeded. See limits (https://pushalot.com/api#limits) to learn more about what limits are enforced.");
+                            case HttpStatusCode.Gone:
+                                throw new Exception("The AuthorizationToken is no longer valid and no more messages should be ever sent again using that token.");
+                            case HttpStatusCode.InternalServerError:
+                                throw new Exception("Something is broken. Please contact Pushalot.com (https://pushalot.com/support) so we can investigate.");
+                            case HttpStatusCode.ServiceUnavailable:
+                                throw new Exception("Pushalot.com servers are currently overloaded with requests. Try again later.");
                             default:
-                                throw new System.Exception("Unknown error.");
+                                throw new Exception("Unknown error.");
                         }
                     }
                 }
@@ -84,7 +90,7 @@ namespace TIKSN.Pushalot
 
         private static string GetJsonText(Message message, AuthorizationToken authorizationToken)
         {
-            var jsonDictionary = new System.Collections.Generic.Dictionary<string, object>();
+            var jsonDictionary = new Dictionary<string, object>();
 
             jsonDictionary.Add(JSON_FIELD_NAME_AUTHORIZATION_TOKEN, authorizationToken.Token);
 
@@ -123,7 +129,7 @@ namespace TIKSN.Pushalot
                 jsonDictionary.Add(JSON_FIELD_NAME_TIME_TO_LIVE, message.TimeToLive.Value);
             }
 
-            string jsonText = Newtonsoft.Json.JsonConvert.SerializeObject(jsonDictionary);
+            string jsonText = JsonConvert.SerializeObject(jsonDictionary);
 
             return jsonText;
         }
@@ -131,44 +137,44 @@ namespace TIKSN.Pushalot
 
     public class PushalotClient<T> : PushalotClient
     {
-        private System.Lazy<System.Linq.ILookup<T, AuthorizationToken>> specialSubscribersLookup;
-        private System.Collections.Generic.HashSet<System.Tuple<T, AuthorizationToken>> specialSubscribersSet;
+        private Lazy<ILookup<T, AuthorizationToken>> specialSubscribersLookup;
+        private HashSet<Tuple<T, AuthorizationToken>> specialSubscribersSet;
 
         public PushalotClient()
             : base()
         {
-            this.specialSubscribersSet = new System.Collections.Generic.HashSet<System.Tuple<T, AuthorizationToken>>();
+			specialSubscribersSet = new HashSet<Tuple<T, AuthorizationToken>>();
 
-            this.ResetSpecialSubscribersLookup();
+			ResetSpecialSubscribersLookup();
         }
 
         public bool Subscribe(T tag, AuthorizationToken authorizationToken)
         {
-            return this.specialSubscribersSet.Add(new System.Tuple<T, AuthorizationToken>(tag, authorizationToken));
+            return specialSubscribersSet.Add(new Tuple<T, AuthorizationToken>(tag, authorizationToken));
         }
 
         public bool Unsubscribe(T tag, AuthorizationToken authorizationToken)
         {
-            return this.specialSubscribersSet.Remove(new System.Tuple<T, AuthorizationToken>(tag, authorizationToken));
+            return specialSubscribersSet.Remove(new Tuple<T, AuthorizationToken>(tag, authorizationToken));
         }
 
         private void ResetSpecialSubscribersLookup()
         {
-            this.specialSubscribersLookup = new System.Lazy<System.Linq.ILookup<T, AuthorizationToken>>(this.InitializeSpecialSubscribersLookup);
+			specialSubscribersLookup = new Lazy<ILookup<T, AuthorizationToken>>(InitializeSpecialSubscribersLookup);
         }
 
-        private System.Linq.ILookup<T, AuthorizationToken> InitializeSpecialSubscribersLookup()
+        private ILookup<T, AuthorizationToken> InitializeSpecialSubscribersLookup()
         {
-            return this.specialSubscribersSet.ToLookup(item => item.Item1, item => item.Item2);
+            return specialSubscribersSet.ToLookup(item => item.Item1, item => item.Item2);
         }
 
-        public async System.Threading.Tasks.Task SendMessage(Message message, params T[] tags)
+        public async Task SendMessage(Message message, params T[] tags)
         {
-            await this.SendMessage(message);
+            await SendMessage(message);
 
             foreach (var tag in tags)
             {
-                foreach (var specialSubscriber in this.specialSubscribersLookup.Value[tag])
+                foreach (var specialSubscriber in specialSubscribersLookup.Value[tag])
                 {
                     await SendMessage(message, specialSubscriber);
                 }

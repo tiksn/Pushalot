@@ -43,12 +43,18 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AuthorizationToken.cs" />
+    <Compile Include="IPushalotConfiguration.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="MessageBuilder.cs" />
     <Compile Include="MessageImage.cs" />
     <Compile Include="MessageLink.cs" />
     <Compile Include="PushalotClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Telemetry\PushalotEventTelemeter.cs" />
+    <Compile Include="Telemetry\PushalotExceptionTelemeter.cs" />
+    <Compile Include="Telemetry\PushalotMetricTelemeter.cs" />
+    <Compile Include="Telemetry\PushalotTraceTelemeter.cs" />
+    <Compile Include="Telemetry\TelemeterBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
